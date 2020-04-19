@@ -8,17 +8,17 @@ import lombok.AccessLevel;
 import java.util.List;
 import java.util.Map;
 
-import io.vavr.control.Option;
 import io.vavr.control.Try;
 import one.util.streamex.StreamEx;
 
 @lombok.Data
 public class PlayerMovePrompt
 {
-    @lombok.Getter ( AccessLevel.NONE )
+    @lombok.Getter ( AccessLevel.PRIVATE )
     private final NiceyDiceGame game;
-    @lombok.Getter ( AccessLevel.NONE )
+    @lombok.Getter ( AccessLevel.PRIVATE )
     private final Player        player;
+    private final Class<? extends Move> moveType;
 
     /**
      * Should be created when the gameplay dictates that it is time for the
@@ -31,7 +31,10 @@ public class PlayerMovePrompt
      * this player, and this condition will throw an
      * {@link IllegalArgumentException}.
      */
-    public PlayerMovePrompt( final NiceyDiceGame game, final Player player )
+    PlayerMovePrompt(
+            final NiceyDiceGame game,
+            final Player player,
+            final Class<? extends Move> moveType)
     {
         if ( game.getPlayers().currentPlayer() != player )
             throw new IllegalStateException(
@@ -42,33 +45,36 @@ public class PlayerMovePrompt
 
         this.game = game;
         this.player = player;
+        this.moveType = moveType;
     }
 
     public Try<Move> promptPlayerMove()
     {
-        return player.proposeMove( this );
+        return getPlayer().proposeMove( this );
     }
 
     public Board getBoard()
     {
-        return game.getBoard();
+        return getGame().getBoard();
     }
 
     public RolledDice getRolledDice()
     {
-        return game.getCurrentPlayerRolledDice();
+        return getGame().getCurrentPlayerRolledDice();
     }
 
     public Map<Player.Name, List<ScoredCard>> getScoreBoard()
     {
-        return StreamEx.of( game.getPlayers().iterator() )
+        return StreamEx.of( getGame().getPlayers().iterator() )
                 .mapToEntry( Player::getName, Player::getScoredCards ).toMap();
     }
 
-    public static Try<PlayerMovePrompt> currentPlayerMovePrompt( final NiceyDiceGame game )
+    public static PlayerMovePrompt currentPlayerMovePrompt(
+            @lombok.NonNull final NiceyDiceGame game)
     {
-        return Option.of( game )
-                .toTry()
-                .map( g -> new PlayerMovePrompt( g, g.getPlayers().currentPlayer() ) );
+        return new PlayerMovePrompt(
+            game,
+            game.getPlayers().currentPlayer(),
+            game.getNextMoveTypeNeededForCurrentPlayer());
     }
 }

@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.shaba.nicey_dice.player.Move;
 import org.shaba.nicey_dice.player.Player;
+import org.shaba.nicey_dice.player.move.PostRollMove.EndTurn;
+import org.shaba.nicey_dice.player.move.PreRollMove;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.same;
@@ -70,7 +72,7 @@ public class PlayerMovePromptTest
         mockThatItIsTheTurnOfThisPlayer();
         mockDiceRolled();
         instantiatePlayerMovePrompt();
-        move = null;
+        move = new EndTurn();
         when( player.proposeMove( same( subject ) ) ).thenReturn( Success( move ) );
         assertThat( subject.promptPlayerMove() ).isEqualTo( Success( move ) );
     }
@@ -87,7 +89,7 @@ public class PlayerMovePromptTest
 
     private void instantiatePlayerMovePrompt()
     {
-        subject = new PlayerMovePrompt( game, player );
+        subject = new PlayerMovePrompt( game, player, PreRollMove.class );
     }
 
     private void mockThatItIsTheTurnOfThisPlayer()

@@ -66,7 +66,7 @@ public class NiceyDiceIT
         final NiceyDiceGame game = gameFactory.createForNumberOfPlayers( 2 );
 
         assertThat( game.getCurrentPlayerRolledDice() ).isSameAs( UNROLLED );
-        assertThatThrownBy( () -> game.promptCurrentPlayerForDicePlacement() )
+        assertThatThrownBy( () -> game.promptCurrentPlayerToProposeMove() )
             .isInstanceOf( IllegalStateException.class );
     }
 
@@ -76,7 +76,7 @@ public class NiceyDiceIT
         final NiceyDiceGame game = gameFactory.createForNumberOfPlayers( 2 );
 
         assertThat( game.getCurrentPlayerRolledDice() ).isSameAs( UNROLLED );
-        assertThatThrownBy( () -> game.promptCurrentPlayerForDicePlacement() )
+        assertThatThrownBy( () -> game.promptCurrentPlayerToProposeMove() )
             .isInstanceOf( IllegalStateException.class );
     }
 

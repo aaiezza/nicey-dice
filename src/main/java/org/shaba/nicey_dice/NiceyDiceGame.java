@@ -1,11 +1,18 @@
 package org.shaba.nicey_dice;
 
+import static io.vavr.API.Success;
+
 import org.shaba.nicey_dice.player.Move;
+import org.shaba.nicey_dice.player.Player;
+import org.shaba.nicey_dice.player.move.PostRollMove;
+import org.shaba.nicey_dice.player.move.PreRollMove;
 
 import java.util.function.Function;
 
 import static org.shaba.nicey_dice.PlayerMovePrompt.currentPlayerMovePrompt;
 import static org.shaba.nicey_dice.factories.DiceRoller.ROLLER;
+
+import io.vavr.control.Try;
 
 @lombok.Data
 public class NiceyDiceGame
@@ -21,12 +28,20 @@ public class NiceyDiceGame
 
     public int getNumberOfPlayers()
     {
-        return players.getNumberOfPlayers();
+        return getPlayers().getNumberOfPlayers();
+    }
+
+    public Player getCurrentPlayer() {
+        return getPlayers().currentPlayer();
     }
 
     public NiceyDiceGame fillField()
     {
-        return new NiceyDiceGame( board.fillField(), players, currentPlayerRolledDice );
+        return new NiceyDiceGame( getBoard().fillField(), getPlayers(), getCurrentPlayerRolledDice() );
+    }
+
+    public Class<? extends Move> getNextMoveTypeNeededForCurrentPlayer() {
+        return getCurrentPlayerRolledDice().isUnrolled() ? PreRollMove.class : PostRollMove.class;
     }
 
     /**
@@ -37,41 +52,27 @@ public class NiceyDiceGame
      *         to either roll, or take back all of his dice, and it was applied
      *         to the this current game state.
      */
-    public NiceyDiceGame promptCurrentPlayerToRollDice()
+    public Try<NiceyDiceGame> promptCurrentPlayerToProposeMove()
     {
-        return currentPlayerMovePrompt( this )
+        return Success(currentPlayerMovePrompt( this ))
                 .flatMap( PlayerMovePrompt::promptPlayerMove )
-                // TODO: .map( MoveValidator::validateMove )
-                .map( applyMoveToGame() ).get();
+                // TODO?: .map( MoveValidator::validateMove )
+                .map( applyMoveToGame() );
     }
 
     public NiceyDiceGame rollDiceForCurrentPlayer()
     {
-        return currentPlayerRolledDice == RolledDice.UNROLLED ? new NiceyDiceGame( board, players,
-                ROLLER.rollDice(
-                    players.currentPlayer().getRollableDice( board.getFieldCards() ) ) ) : this;
-    }
-
-    /**
-     * The current player is prompted for a plan of play given the current
-     * (immutable) state of the game.
-     * 
-     * @return The game as it exists after the player has made a valid decision
-     *         to play and it was applied to the this current game state.
-     */
-    public NiceyDiceGame promptCurrentPlayerForDicePlacement()
-    {
-        return currentPlayerMovePrompt( this ).flatMap( PlayerMovePrompt::promptPlayerMove )
-                // TODO: .map( MoveValidator::validateMove )
-                .map( applyMoveToGame() ).get();
+        return getCurrentPlayerRolledDice().isUnrolled() ?
+                new NiceyDiceGame(
+                    board,
+                    players,
+                    ROLLER.rollDice( getCurrentPlayer()
+                        .getRollableDice( board.getFieldCards() ) ) )
+                : this;
     }
 
     private Function<Move, NiceyDiceGame> applyMoveToGame()
     {
-        return move -> {
-
-            // TODO
-            return this;
-        };
+        return move -> move.apply(this).apply(getCurrentPlayer());
     }
 }

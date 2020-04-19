@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.shaba.nicey_dice.FieldCards.fieldCards;
 
+import one.util.streamex.StreamEx;
+
 @lombok.Data
 public class Board
 {
@@ -28,6 +30,13 @@ public class Board
     {
         return fieldCards.contains( fieldCard ) ? new Board( cardStock,
                 fieldCards.placeDiceForPlayer( fieldCard, player, diceFaces ) ) : this;
+    }
+
+    public Board removeDiceForPlayer(final Player player) {
+        return board(getCardStock(),
+            StreamEx.of(fieldCards.iterator())
+                .map(fieldCard -> fieldCard.removePlayerClaims(player))
+                .toListAndThen(FieldCards::new));
     }
 
     public Board drawFromStock()

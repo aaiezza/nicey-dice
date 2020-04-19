@@ -48,7 +48,7 @@ public class Players implements Iterable<Player>
         return playerQueue.peek();
     }
 
-    Players nextPlayer()
+    public Players nextPlayer()
     {
         final Queue<Player> players = new LinkedList<>( this.playerQueue );
         players.offer( players.poll() );
@@ -58,7 +58,10 @@ public class Players implements Iterable<Player>
     public static Players players( final Player.Name... playerNames )
     {
         return new Players(
-                Arrays.stream( playerNames ).map( Player::player ).toArray( Player []::new ) );
+            StreamEx.of( Arrays.stream( playerNames ) )
+                .nonNull()
+                .map( Player::player )
+                .toArray( Player []::new ) );
     }
 
     @Override

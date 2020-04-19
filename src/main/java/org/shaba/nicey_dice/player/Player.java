@@ -1,16 +1,20 @@
 package org.shaba.nicey_dice.player;
 
 import static io.vavr.API.Success;
+import static java.lang.String.format;
 
 import com.google.common.collect.Lists;
 
 import org.shaba.nicey_dice.*;
+import org.shaba.nicey_dice.player.move.PostRollMove;
+import org.shaba.nicey_dice.player.move.PreRollMove;
 
 import java.util.Collections;
 import java.util.List;
 
 import static org.shaba.nicey_dice.Points.sum;
 
+import io.vavr.API;
 import io.vavr.control.Try;
 
 @lombok.Data
@@ -55,18 +59,30 @@ public abstract class Player
      */
     public abstract Try<Move> proposeMove( final PlayerMovePrompt movePrompt );
 
-    // TODO
     public static Player player( final Name name )
     {
-        return new Player( name )
-        {
-            @Override
-            public Try<Move> proposeMove( final PlayerMovePrompt prompt )
-            {
-                // return Move.END_TURN;
-                return Success( null );
+        @lombok.Value
+        @lombok.EqualsAndHashCode(callSuper = true)
+        class DefaultPlayer extends Player {
+            public DefaultPlayer(final Name name) {
+                super(name);
             }
-        };
+
+            @Override
+            public Try<Move> proposeMove(final PlayerMovePrompt movePrompt) {
+                if(PreRollMove.class.isAssignableFrom(movePrompt.getMoveType())) {
+                    return Success(new PreRollMove.RollDice());
+                } else if (PostRollMove.class.isAssignableFrom(movePrompt.getMoveType())) {
+                    return Success(new PostRollMove.EndTurn());
+                } else {
+                    return API.Failure(
+                        new IllegalArgumentException(
+                                format("Unknown Move Type: %s", movePrompt.getMoveType().getSimpleName())));
+                }
+            }
+        }
+
+        return new DefaultPlayer(name);
     }
 
     @lombok.Value ( staticConstructor = "name" )

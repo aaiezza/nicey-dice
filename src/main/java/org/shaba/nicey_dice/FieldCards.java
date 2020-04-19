@@ -2,27 +2,24 @@ package org.shaba.nicey_dice;
 
 import static java.lang.String.format;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.shaba.nicey_dice.FieldCard.fieldCard;
-
 import com.google.common.collect.Lists;
 
 import org.shaba.nicey_dice.player.Player;
 
+import lombok.AccessLevel;
+
+import java.util.*;
+
+import static org.shaba.nicey_dice.FieldCard.fieldCard;
+
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import lombok.AccessLevel;
 import one.util.streamex.StreamEx;
 
 /**
  * Score-able cards drawn from the stock
  */
 @lombok.Data
-@lombok.RequiredArgsConstructor ( access = AccessLevel.PRIVATE )
 public class FieldCards implements Iterable<FieldCard>
 {
     public static final int       MAXIMUM_NUMBER_OF_CARDS_IN_FIELD = 3;
@@ -32,6 +29,10 @@ public class FieldCards implements Iterable<FieldCard>
     private FieldCards()
     {
         this.cards = Collections.emptyList();
+    }
+
+    FieldCards(final List<FieldCard> cards) {
+        this.cards = Collections.unmodifiableList(cards);
     }
 
     public FieldCards addCardFromStock( final Card card )
@@ -76,6 +77,7 @@ public class FieldCards implements Iterable<FieldCard>
         return new FieldCards( Collections.unmodifiableList( fieldCards ) );
     }
 
+    // TODO: Get rid of this if it is not needed
     public Tuple2<FieldCards, FieldCard> scoreCard( final FieldCard fieldCard )
     {
         final int cardIndex = cards.indexOf( fieldCard );

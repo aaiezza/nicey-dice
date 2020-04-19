@@ -1,16 +1,19 @@
 package org.shaba.nicey_dice;
 
+import static java.lang.String.format;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.counting;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import org.apache.commons.collections4.CollectionUtils;
+
+import lombok.AccessLevel;
+
+import java.util.*;
+
+import static com.google.common.base.Predicates.not;
 
 import io.vavr.control.Option;
-import lombok.AccessLevel;
+import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 
 @lombok.Data
@@ -21,19 +24,39 @@ public class RolledDice implements Iterable<DiceFace>
     @lombok.Getter ( AccessLevel.NONE )
     private final List<DiceFace>   dice;
 
-    private RolledDice( final List<DiceFace> dice )
+    private RolledDice( @lombok.NonNull final List<DiceFace> dice )
     {
         this.dice = Collections.unmodifiableList( dice );
     }
 
     public static RolledDice rolledDice( final DiceFace... diceFaces )
     {
-        return Option.of( diceFaces ).map( Arrays::asList ).map( RolledDice::new ).get();
+        return Option.of( diceFaces )
+                .map( Arrays::asList )
+                .filter(CollectionUtils::isNotEmpty)
+                .fold(() -> UNROLLED, RolledDice::new);
     }
 
     public Map<DiceFace, Long> getDiceFaceCountMap()
     {
         return StreamEx.of( dice ).groupingBy( identity(), counting() );
+    }
+
+    public DetachedDie select(@lombok.NonNull final DiceFace diceFace) {
+        if(!dice.contains(diceFace))
+            throw new IllegalStateException(format("Did not roll a %d", diceFace.getValue()));
+
+        final Integer selectedDie = dice.indexOf(diceFace);
+        return new DetachedDie(
+            EntryStream.of(dice)
+                .filterKeys(not(selectedDie::equals))
+                .values()
+                .toListAndThen(RolledDice::new),
+            diceFace);
+    }
+
+    public boolean isUnrolled() {
+        return this == UNROLLED;
     }
 
     @Override
@@ -45,11 +68,15 @@ public class RolledDice implements Iterable<DiceFace>
     @Override
     public String toString()
     {
-        final StringBuilder out = new StringBuilder( "RolledDice [ " );
+        return StreamEx.of( dice )
+            .map( DiceFace::getValue )
+            .sorted()
+            .joining(", ", "RolledDice [", "]");
+    }
 
-        StreamEx.of( dice ).map( DiceFace::getValue ).sorted()
-                .mapLastOrElse( d -> out.append( d ).append( ", " ), out::append ).count();
-
-        return out.append( "]" ).toString();
+    @lombok.Data
+    public static class DetachedDie {
+        private final RolledDice rolledDice;
+        private final DiceFace chosenDie;
     }
 }
