@@ -1,0 +1,113 @@
+# This workflow will package the project and create the release
+
+name: Create Release Branch
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2.1.0
+
+    - name: Retrieve Semantic Version
+      id: create_variables
+      run: |
+        CURRENT_VERSION=`mvn help:evaluate -Dexpression=project.version -q -DforceStdout`
+        echo ::set-output name=sem-ver::${CURRENT_VERSION%-SNAPSHOT}
+        echo ::set-output name=tag::"${CURRENT_VERSION%-SNAPSHOT}+${GITHUB_RUN_NUMBER}"
+        echo "Setting version to: ""${CURRENT_VERSION%-SNAPSHOT}+${GITHUB_RUN_NUMBER}"
+        ARTIFACT_NAME=`mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout`
+        echo ::set-output name=jar-name::$ARTIFACT_NAME-${CURRENT_VERSION%-SNAPSHOT}+${GITHUB_RUN_NUMBER}.jar
+        echo ::set-output name=release-jar-name::$ARTIFACT_NAME-${CURRENT_VERSION%-SNAPSHOT}+${GITHUB_RUN_NUMBER}.jar
+        echo $ARTIFACT_NAME-${CURRENT_VERSION%-SNAPSHOT}+${GITHUB_RUN_NUMBER}.jar
+
+    outputs:
+      tag: ${{ steps.create_variables.outputs.tag }}
+      sem-ver: ${{ steps.create_variables.outputs.sem-ver }}
+      jar-name: ${{ steps.create_variables.outputs.jar-name }}
+      release-jar-name: ${{ steps.create_variables.outputs.release-jar-name }}
+
+  create-release-branch:
+    needs: version
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2.1.0
+
+    - name: Check if branch and tag exist
+      id: check_exists
+      run: |
+        TAG_EXISTS=`git show-ref --tags --quiet --verify -- "refs/tags/${{ needs.version.outputs.tag }}" && echo true || echo false`
+        echo ::set-output name=tag-exists::$TAG_EXISTS
+        BRANCH_EXISTS=`git show-ref --quiet --verify -- "refs/heads/releases/${{ needs.version.outputs.tag }}" && echo true || echo false`
+        echo ::set-output name=branch-exists::$BRANCH_EXISTS
+
+    - name: Delete tag & release
+      if: steps.check_exists.outputs.tag-exists == 'true'
+      run: |
+        git push --delete origin refs/tags/${{ needs.version.outputs.tag }}
+
+    - name: Create release branch & push
+      if: steps.check_exists.outputs.branch-exists == 'false'
+      run: |
+        git checkout -b releases/${{ needs.version.outputs.tag }}
+        git push origin releases/${{ needs.version.outputs.tag }}
+        mvn versions:set -DnewVersion=${{ needs.version.outputs.tag }}
+        mvn versions:commit
+        git add .
+        git config user.email "actions@github.com"
+        git config user.name "GitHub Actions"
+        git commit --message="Set release version to ${{ needs.version.outputs.tag }}"
+        git push origin releases/${{ needs.version.outputs.tag }}
+
+  release:
+    needs: [version, create-release-branch]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2.1.0
+      with:
+        ref: releases/${{ needs.version.outputs.tag }}
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+
+    - name: Cache Maven packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Build with Maven
+      run: mvn -B install -Dmaven.test.skip=true
+
+    - name: Create Release
+      uses: aaiezza/create-release@v1.0.0
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        release_branch: releases/${{ needs.version.outputs.tag }}
+        tag: ${{ needs.version.outputs.tag }}
+        name: Release ${{ needs.version.outputs.tag }}
+        prerelease: true
+        # Update this `prerelease` to `false` when we are ready to go!
+
+    - name: Upload Jar
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: target/${{ needs.version.outputs.jar-name }}
+        asset_name: ${{ needs.version.outputs.release-jar-name }}
+        asset_content_type: application/java-archive
