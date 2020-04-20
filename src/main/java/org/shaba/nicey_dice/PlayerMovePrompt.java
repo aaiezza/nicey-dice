@@ -39,9 +39,6 @@ public class PlayerMovePrompt
         if ( game.getPlayers().currentPlayer() != player )
             throw new IllegalStateException(
                     "This player cannot make a move since it is not the turn of this player." );
-        if ( game.getCurrentPlayerRolledDice() == RolledDice.UNROLLED )
-            throw new IllegalStateException(
-                    "This player cannot make a move since player has not rolled dice." );
 
         this.game = game;
         this.player = player;
@@ -74,7 +71,7 @@ public class PlayerMovePrompt
     {
         return new PlayerMovePrompt(
             game,
-            game.getPlayers().currentPlayer(),
+            game.getCurrentPlayer(),
             game.getNextMoveTypeNeededForCurrentPlayer());
     }
 }

@@ -7,10 +7,8 @@ import org.shaba.nicey_dice.factories.NiceyDiceGameFactory;
 import org.shaba.nicey_dice.player.Player;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.shaba.nicey_dice.Points.points;
-import static org.shaba.nicey_dice.RolledDice.UNROLLED;
 
 public class NiceyDiceIT
 {
@@ -38,13 +36,16 @@ public class NiceyDiceIT
         assertThat( game.getNumberOfPlayers() ).isEqualTo( 2 );
 
         assertThat( game.getBoard().getFieldCards().size() )
-                .as( "Three scorable cards in the field" )
-                .isEqualTo( FieldCards.MAXIMUM_NUMBER_OF_CARDS_IN_FIELD );
+            .as( "Three scorable cards in the field" )
+            .isEqualTo( FieldCards.MAXIMUM_NUMBER_OF_CARDS_IN_FIELD );
 
         printFieldCards( game );
 
-        assertThat( game.getPlayers() ).extracting( Player::getPoints,
-            p -> p.getRollableDice( game.getBoard().getFieldCards() ) ).containsOnly(
+        assertThat( game.getPlayers() )
+            .extracting(
+                Player::getPoints,
+                p -> p.getRollableDice( game.getBoard().getFieldCards() ) )
+            .containsOnly(
                 tuple( points( 0 ), Player.NUMBER_OF_TOTAL_DICE ),
                 tuple( points( 0 ), Player.NUMBER_OF_TOTAL_DICE ) );
 
@@ -58,26 +59,6 @@ public class NiceyDiceIT
                 .rollDiceForCurrentPlayer();
 
         assertThat( game.getCurrentPlayerRolledDice() ).hasSize( 6 );
-    }
-
-    @Test
-    public void givenGameWhereFirstPlayerHasNotRolledDice_CannotPromptPlayerToPlaceDice()
-    {
-        final NiceyDiceGame game = gameFactory.createForNumberOfPlayers( 2 );
-
-        assertThat( game.getCurrentPlayerRolledDice() ).isSameAs( UNROLLED );
-        assertThatThrownBy( () -> game.promptCurrentPlayerToProposeMove() )
-            .isInstanceOf( IllegalStateException.class );
-    }
-
-    @Test
-    public void givenGameWhereFirstPlayerHasRolledDice_CanPromptPlayerToPlaceDice()
-    {
-        final NiceyDiceGame game = gameFactory.createForNumberOfPlayers( 2 );
-
-        assertThat( game.getCurrentPlayerRolledDice() ).isSameAs( UNROLLED );
-        assertThatThrownBy( () -> game.promptCurrentPlayerToProposeMove() )
-            .isInstanceOf( IllegalStateException.class );
     }
 
     private void printFieldCards( final NiceyDiceGame game )

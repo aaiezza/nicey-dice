@@ -12,8 +12,6 @@ import java.util.*;
 
 import static org.shaba.nicey_dice.FieldCard.fieldCard;
 
-import io.vavr.Tuple;
-import io.vavr.Tuple2;
 import one.util.streamex.StreamEx;
 
 /**
@@ -33,6 +31,10 @@ public class FieldCards implements Iterable<FieldCard>
 
     FieldCards(final List<FieldCard> cards) {
         this.cards = Collections.unmodifiableList(cards);
+    }
+
+    public boolean isEmpty() {
+        return cards.isEmpty();
     }
 
     public FieldCards addCardFromStock( final Card card )
@@ -78,7 +80,7 @@ public class FieldCards implements Iterable<FieldCard>
     }
 
     // TODO: Get rid of this if it is not needed
-    public Tuple2<FieldCards, FieldCard> scoreCard( final FieldCard fieldCard )
+    public FieldCards scoreCard( final FieldCard fieldCard )
     {
         final int cardIndex = cards.indexOf( fieldCard );
         if ( !cards.contains( fieldCard ) || cardIndex < 0 )
@@ -87,15 +89,18 @@ public class FieldCards implements Iterable<FieldCard>
 
         final List<FieldCard> fieldCards = Lists.newArrayList();
         fieldCards.addAll( cards );
-        final FieldCard scoredFieldCard = fieldCards.get( cardIndex );
         fieldCards.remove( cardIndex );
-        return Tuple.of( new FieldCards( Collections.unmodifiableList( fieldCards ) ),
-            scoredFieldCard );
+        return new FieldCards( Collections.unmodifiableList( fieldCards ) );
     }
 
     public boolean contains( final FieldCard fieldCard )
     {
-        return cardStream().filter( fieldCard::equals ).findFirst().isPresent();
+        return get(fieldCard).isPresent();
+    }
+
+    public Optional<FieldCard> get( final FieldCard fieldCard )
+    {
+        return cardStream().filter( fieldCard::equals ).findFirst();
     }
 
     public static FieldCards fieldCards()

@@ -40,6 +40,10 @@ public class NiceyDiceGame
         return new NiceyDiceGame( getBoard().fillField(), getPlayers(), getCurrentPlayerRolledDice() );
     }
 
+    public boolean isOutOfCards() {
+        return getBoard().getFieldCards().isEmpty() && getBoard().getCardStock().isEmpty();
+    }
+
     public Class<? extends Move> getNextMoveTypeNeededForCurrentPlayer() {
         return getCurrentPlayerRolledDice().isUnrolled() ? PreRollMove.class : PostRollMove.class;
     }

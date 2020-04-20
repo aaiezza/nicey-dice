@@ -1,7 +1,9 @@
 package org.shaba.nicey_dice;
 
-import static io.vavr.API.*;
+import static io.vavr.API.Failure;
+import static io.vavr.API.Success;
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -12,6 +14,8 @@ import org.shaba.nicey_dice.player.Player;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 import static org.shaba.nicey_dice.ScoredCard.scoredCard;
 
@@ -38,30 +42,41 @@ public class FieldCard extends Card
 
     public FieldCard removePlayerClaims( final Player player )
     {
-        return EntryStream.of(playerClaims)
-            .mapToValue((playerName, claims) ->
-                playerName.equals(player.getName())? Collections.<DiceFace> emptyList() : claims)
+        return EntryStream.of( playerClaims )
+            .mapToValue( (playerName, claims) ->
+                playerName.equals( player.getName() )? Collections.<DiceFace> emptyList() : claims)
             .toMapAndThen(claims -> new FieldCard( this, claims ) );
     }
 
     public Try<ScoredCard> scoreCardFor( final Player player )
     {
-        return Try( () -> SetUtils.isEqualSet( getClaimCriteria(), getClaimsForPlayer( player ) ))
-                .flatMap( playerMeetsCriteria -> playerMeetsCriteria
-                        .booleanValue() ? Success( scoredCard( this ) )
-                                        : Failure( new IllegalStateException(
-                                                "Player does not meet the card criteria." ) ) );
+        return playerMeetsCriteria( player ) ? Success( scoredCard( this ) ) : Failure(
+            new IllegalStateException( "Player does not meet the card criteria." ) );
+    }
+
+    public boolean playerMeetsCriteria( final Player player ) {
+        return SetUtils.isEqualSet( getClaimCriteria(), getClaimsForPlayer( player ) );
     }
 
     public List<DiceFace> getClaimsForPlayer( final Player player )
     {
         return Collections
-                .unmodifiableList( playerClaims.getOrDefault( player, Lists.newArrayList() ) );
+                .unmodifiableList( playerClaims.getOrDefault( player.getName(), emptyList() ) );
+    }
+
+    public List<DiceFace> getUnclaimedCrieriaForPlayer( final Player player )
+    {
+        final List<DiceFace> playerClaims = newArrayList(getClaimsForPlayer(player));
+        return StreamEx.of(getClaimCriteria())
+            .remove(playerClaims::remove)
+            .distinct()
+            .toList();
     }
 
     public Predicate<Player> claimForDiceFaceFulfilled( final DiceFace diceFace )
     {
-        return player -> exceedsCriteria().test( diceFace,
+        return player -> exceedsCriteria().test(
+            diceFace,
             getClaimsForPlayer( player ).stream()
                 .filter( diceFace::equals )
                 .count() );
