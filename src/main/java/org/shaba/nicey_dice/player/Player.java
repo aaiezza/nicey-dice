@@ -16,6 +16,7 @@ import static org.shaba.nicey_dice.Points.sum;
 
 import io.vavr.API;
 import io.vavr.control.Try;
+import one.util.streamex.StreamEx;
 
 @lombok.Data
 public abstract class Player
@@ -26,8 +27,13 @@ public abstract class Player
 
     public Player( final Name name )
     {
+        this( name, Lists.newArrayList() );
+    }
+
+    protected Player( final Name name, final List<ScoredCard> scoredCards )
+    {
         this.name = name;
-        this.scoredCards = Collections.unmodifiableList( Lists.newArrayList() );
+        this.scoredCards = Collections.unmodifiableList( scoredCards );
     }
 
     public final int getRollableDice( final FieldCards field )
@@ -40,6 +46,8 @@ public abstract class Player
     {
         return sumPoints( this );
     }
+
+    public abstract Player withScoredCard( final ScoredCard scoredCard );
 
     public static Points sumPoints( final Player player )
     {
@@ -68,6 +76,10 @@ public abstract class Player
                 super(name);
             }
 
+            public DefaultPlayer(final Name name, final List<ScoredCard> scoredCards) {
+                super(name, scoredCards);
+            }
+
             @Override
             public Try<Move> proposeMove(final PlayerMovePrompt movePrompt) {
                 if(PreRollMove.class.isAssignableFrom(movePrompt.getMoveType())) {
@@ -79,6 +91,13 @@ public abstract class Player
                         new IllegalArgumentException(
                                 format("Unknown Move Type: %s", movePrompt.getMoveType().getSimpleName())));
                 }
+            }
+
+            @Override
+            public Player withScoredCard(final ScoredCard scoredCard) {
+                return new DefaultPlayer(
+                    getName(),
+                    StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList() );
             }
         }
 

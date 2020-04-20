@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.shaba.nicey_dice.RolledDice.UNROLLED;
 
 @RunWith ( MockitoJUnitRunner.StrictStubs.class )
 public class PlayerMovePromptTest
@@ -48,21 +47,9 @@ public class PlayerMovePromptTest
                 .hasMessageContaining( "not the turn of this player" );
     }
 
-    @Test
-    public void givenPlayersTurnAndUnrolledDice_PromptPlayerForDicePlacementShouldFail()
+    public void givenPlayersTurn_PromptPlayerForDicePlacementShouldWork()
     {
         mockThatItIsTheTurnOfThisPlayer();
-        mockDiceUnrolled();
-        assertThatThrownBy( this::instantiatePlayerMovePrompt )
-                .isInstanceOf( IllegalStateException.class )
-                .hasMessageContaining( "player has not rolled dice" );
-    }
-
-    @Test
-    public void givenPlayersTurnAndRolledDice_PromptPlayerForDicePlacementShouldWork()
-    {
-        mockThatItIsTheTurnOfThisPlayer();
-        mockDiceRolled();
         assertThatCode( this::instantiatePlayerMovePrompt ).doesNotThrowAnyException();
     }
 
@@ -70,7 +57,6 @@ public class PlayerMovePromptTest
     public void whenPlayerProposesNullMove_CountsAsEndTurn()
     {
         mockThatItIsTheTurnOfThisPlayer();
-        mockDiceRolled();
         instantiatePlayerMovePrompt();
         move = new EndTurn();
         when( player.proposeMove( same( subject ) ) ).thenReturn( Success( move ) );
@@ -81,7 +67,6 @@ public class PlayerMovePromptTest
     public void whenPlayerProposesValidMove_MoveIsReturned()
     {
         mockThatItIsTheTurnOfThisPlayer();
-        mockDiceRolled();
         instantiatePlayerMovePrompt();
         when( player.proposeMove( same( subject ) ) ).thenReturn( Success( move ) );
         assertThat( subject.promptPlayerMove().get() ).isSameAs( move );
@@ -100,15 +85,5 @@ public class PlayerMovePromptTest
     private void mockThatItIsNotTheTurnOfThisPlayer()
     {
         when( players.currentPlayer() ).thenReturn( mock( Player.class ) );
-    }
-
-    private void mockDiceRolled()
-    {
-        when( game.getCurrentPlayerRolledDice() ).thenReturn( rolledDice );
-    }
-
-    private void mockDiceUnrolled()
-    {
-        when( game.getCurrentPlayerRolledDice() ).thenReturn( UNROLLED );
     }
 }

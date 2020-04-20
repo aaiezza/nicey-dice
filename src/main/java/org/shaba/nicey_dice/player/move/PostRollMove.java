@@ -5,9 +5,12 @@ import org.shaba.nicey_dice.RolledDice.DetachedDie;
 import org.shaba.nicey_dice.player.Move;
 import org.shaba.nicey_dice.player.Player;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.shaba.nicey_dice.NiceyDiceGame.niceyDiceGame;
+
+import one.util.streamex.StreamEx;
 
 public interface PostRollMove extends Move
 {
@@ -37,15 +40,32 @@ public interface PostRollMove extends Move
 
         @Override
         public Function<Player, NiceyDiceGame> apply(final NiceyDiceGame game) {
-            // TODO Score cards!
             return player -> {
                 final DetachedDie detachedDie = game
                         .getCurrentPlayerRolledDice()
-                        .select(diceFace);
-                final Board board = game
+                        .select(getDiceFace());
+                final AtomicReference<Board> board = new AtomicReference<>(game
                         .getBoard()
-                        .placeDiceForPlayer(fieldCard, player, detachedDie.getChosenDie());
-                return new NiceyDiceGame(board, game.getPlayers(), detachedDie.getRolledDice());
+                        .placeDiceForPlayer(getFieldCard(), player, detachedDie.getChosenDie()));
+                final Players players = StreamEx.of(board.get().getFieldCards().iterator())
+                        .filter(fieldCard -> fieldCard.playerMeetsCriteria(player))
+                        .reduce(
+                            game.getPlayers(),
+                            (plyrs, scoreableCard) -> scoreableCard.scoreCardFor(player)
+                                    .map(player::withScoredCard)
+                                    .map(plyrs::replacePlayer)
+                                    .peek(__ ->
+                                        board.set(new Board(board.get().getCardStock(),
+                                            board.get()
+                                            .getFieldCards()
+                                            .scoreCard(scoreableCard))))
+                                    .toJavaOptional()
+                                    .orElse(plyrs),
+                            (p1s, p2s) -> p1s);
+                return new NiceyDiceGame(
+                    board.get().fillField(),
+                    players,
+                    detachedDie.getRolledDice());
             };
         }
     }

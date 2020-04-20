@@ -4,13 +4,11 @@ import static java.lang.String.format;
 
 import org.shaba.nicey_dice.player.Player;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Queue;
+import lombok.AccessLevel;
+
+import java.util.*;
 import java.util.function.IntFunction;
 
-import lombok.AccessLevel;
 import one.util.streamex.StreamEx;
 
 @lombok.Data
@@ -26,7 +24,7 @@ public class Players implements Iterable<Player>
     @lombok.Getter ( AccessLevel.NONE )
     private final Queue<Player>                                playerQueue;
 
-    private Players( final Player... players )
+    public Players( final Player... players )
     {
         if ( players.length < MINIMUM_NUMBER_OF_PLAYERS ||
                 players.length > MAXIMUM_NUMBER_OF_PLAYERS )
@@ -46,6 +44,13 @@ public class Players implements Iterable<Player>
     Player currentPlayer()
     {
         return playerQueue.peek();
+    }
+
+    public Players replacePlayer(final Player player) {
+        final Queue<Player> players = StreamEx.of(playerQueue).map(p ->
+                p.getName().equals(player.getName()) ? player : p)
+            .toListAndThen(LinkedList::new);
+        return new Players( players );
     }
 
     public Players nextPlayer()
