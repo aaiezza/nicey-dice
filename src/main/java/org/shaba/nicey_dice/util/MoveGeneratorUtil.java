@@ -17,6 +17,7 @@ public class MoveGeneratorUtil {
             .getFieldCards()
             .cardStream()
             .flatMap(fieldCard -> StreamEx.of(fieldCard.getUnclaimedCrieriaForPlayer(player))
+                    .distinct()
                     .filter(prompt.getRolledDice().getDiceFaceCountMap().keySet()::contains)
                     .map(eligibleDiceFace ->
                         new PostRollMove.WorkOnAFieldCard(player, eligibleDiceFace, fieldCard)))

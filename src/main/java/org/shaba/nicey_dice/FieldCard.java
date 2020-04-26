@@ -70,7 +70,6 @@ public class FieldCard extends Card
         final List<DiceFace> playerClaims = newArrayList(getClaimsForPlayer(player));
         return StreamEx.of(getClaimCriteria())
             .remove(playerClaims::remove)
-            .distinct()
             .toList();
     }
 

@@ -3,6 +3,7 @@ package org.shaba.nicey_dice;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.shaba.nicey_dice.factories.CardStockFactory;
 import org.shaba.nicey_dice.player.*;
 import org.shaba.nicey_dice.util.printer.*;
 
@@ -71,14 +72,18 @@ public class NiceyDiceGameTest
                 DiceFacePrinter.diceFacePrinterWithEmojis()),
             new FieldCardPrinter(DiceFacePrinter.diceFacePrinterWithEmojis()));
 
-        subject = niceyDiceGame( board( cardStock(
-            card( dF( 1 ), dF( 2 ), dF( 3 ) ),
-            card( dF( 4 ), dF( 4 ), dF( 4 ) ),
-            card( dF( 4 ), dF( 4 ), dF( 4 ) ),
-            card( dF( 5 ), dF( 5 ), dF( 6 ) ),
-            card( dF( 2 ), dF( 6 ) ) ) ),
+        subject = niceyDiceGame( board( new CardStockFactory().randomCardStock().shuffle() ),
+//            cardStock(
+//            card( dF( 1 ), dF( 2 ), dF( 3 ), dF( 4 ), dF( 5 ), dF( 6 ) ),
+//            card( dF( 1 ), dF( 2 ), dF( 3 ) ),
+//            card( dF( 4 ), dF( 4 ), dF( 4 ) ),
+//            card( dF( 4 ), dF( 4 ), dF( 4 ) ),
+//            card( dF( 5 ), dF( 5 ), dF( 6 ) ),
+//            card( dF( 2 ), dF( 6 ) ) ) ),
+            
 //            card( dF( 1 ), dF( 2 ), dF( 3 ), dF( 4 ), dF( 4 ), dF( 4 ) ),
 //            card( dF( 4 ), dF( 4 ), dF( 4 ), dF( 4 ), dF( 4 ), dF( 4 ) ),
+//            card( dF( 1 ), dF( 2 ), dF( 3 ), dF( 4 ), dF( 5 ), dF( 6 ) ),
 //            card( dF( 4 ), dF( 4 ), dF( 4 ) ),
 //            card( dF( 5 ), dF( 5 ), dF( 6 ) ),
 //            card( dF( 2 ), dF( 6 ) ) ) ),
@@ -100,8 +105,10 @@ public class NiceyDiceGameTest
         sc.close();
 
         subject.getPlayers()
-                .forEach(p -> System.out.printf("%15s : %3d points%n",
-                    p.getName().getValue(), p.getPoints().getValue()));
+                .forEach(p -> System.out.printf("%15s : %3d points%n          Stats | %s%n",
+                    p.getName().getValue(),
+                    p.getPoints().getValue(),
+                    p.getStats()));
         System.out.printf("Game took %d moves%n", moves.get());
 
     }

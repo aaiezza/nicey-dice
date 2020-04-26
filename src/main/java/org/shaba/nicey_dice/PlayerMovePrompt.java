@@ -47,7 +47,7 @@ public class PlayerMovePrompt
 
     public Try<Move> promptPlayerMove()
     {
-        return getPlayer().proposeMove( this );
+        return getPlayer().obtainMove( this );
     }
 
     public Board getBoard()

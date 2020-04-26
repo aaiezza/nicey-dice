@@ -7,7 +7,10 @@ import com.google.common.collect.Lists;
 
 import org.shaba.nicey_dice.*;
 import org.shaba.nicey_dice.player.move.PostRollMove;
+import org.shaba.nicey_dice.player.move.PostRollMove.WorkOnAFieldCard;
 import org.shaba.nicey_dice.player.move.PreRollMove;
+import org.shaba.nicey_dice.player.move.PreRollMove.RollDice;
+import org.shaba.nicey_dice.player.move.PreRollMove.TakeBackDiceInField;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +28,7 @@ public abstract class Player
     public static final int        NUMBER_OF_TOTAL_DICE = 6;
     private final Name             name;
     private final List<ScoredCard> scoredCards;
+    private final Stats            stats;
 
     public Player( final Name name )
     {
@@ -35,6 +39,14 @@ public abstract class Player
     {
         this.name = name;
         this.scoredCards = Collections.unmodifiableList( scoredCards );
+        this.stats = new Stats();
+    }
+
+    protected Player( final Name name, final List<ScoredCard> scoredCards, final Stats stats )
+    {
+        this.name = name;
+        this.scoredCards = Collections.unmodifiableList( scoredCards );
+        this.stats = stats;
     }
 
     public final int getRollableDice( final FieldCards field )
@@ -50,9 +62,22 @@ public abstract class Player
 
     public abstract Player withScoredCard( final ScoredCard scoredCard );
 
+    public abstract Player afterMove(final Move move);
+
     public static Points sumPoints( final Player player )
     {
         return player.scoredCards.stream().map( ScoredCard::getPoints ).collect( sum() );
+    }
+
+    // This hides the Move subclass. But is effective at obtaining statistics.
+    public final Try<Move> obtainMove(final PlayerMovePrompt movePrompt) {
+        return proposeMove(movePrompt).map(move -> {
+//            return move;
+            return move.andThen(applier -> applier.andThen(game -> new NiceyDiceGame(game.getBoard(),
+                    game.getPlayers().replacePlayer(game.getCurrentPlayer().afterMove(move)),
+                    game.getCurrentPlayerRolledDice())))::apply;
+        });
+        
     }
 
     /**
@@ -81,6 +106,10 @@ public abstract class Player
                 super(name, scoredCards);
             }
 
+            public DefaultPlayer(final Name name, final List<ScoredCard> scoredCards, final Stats stats) {
+                super(name, scoredCards, stats);
+            }
+
             @Override
             public Try<Move> proposeMove(final PlayerMovePrompt movePrompt) {
                 if(PreRollMove.class.isAssignableFrom(movePrompt.getMoveType())) {
@@ -98,7 +127,16 @@ public abstract class Player
             public Player withScoredCard(final ScoredCard scoredCard) {
                 return new DefaultPlayer(
                     getName(),
-                    StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList() );
+                    StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList(),
+                    getStats());
+            }
+
+            @Override
+            public Player afterMove(final Move move) {
+                return new DefaultPlayer(
+                    getName(),
+                    getScoredCards(),
+                    getStats().afterMove(move) );
             }
         }
 
@@ -125,6 +163,40 @@ public abstract class Player
             int result = 1;
             result = prime * result + ( ( value == null ) ? 0 : value.hashCode() );
             return result;
+        }
+    }
+
+    @lombok.Data
+    public class Stats {
+        private final int rolls;
+        private final int takeBacks;
+        private final int scores;
+
+        @lombok.experimental.Tolerate
+        public Stats() {
+            this(0, 0, 0);
+        }
+
+        public Stats afterMove(final Move move) {
+            if(move instanceof TakeBackDiceInField) {
+                return new Stats(rolls, takeBacks + 1, scores);
+            } else if (move instanceof RollDice) {
+                return new Stats(rolls + 1, takeBacks, scores);
+            } else if (move instanceof WorkOnAFieldCard) {
+                final List<DiceFace> left = ((WorkOnAFieldCard) move).getFieldCard().getUnclaimedCrieriaForPlayer(Player.this);
+                if(left.size() == 1 && left.contains(((WorkOnAFieldCard) move).getDiceFace())) {
+                    return new Stats(rolls, takeBacks, scores + 1);
+                } else {
+                    return this;
+                }
+            } else {
+                return this;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return format("rolls: %2d, takeBacks: %2d, scores: %2d", rolls, takeBacks, scores);
         }
     }
 }

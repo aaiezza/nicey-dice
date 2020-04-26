@@ -14,7 +14,7 @@ public class DiceFaceFactory
 
     public DiceFace createRandomDiceFace()
     {
-        return diceFace( rand.nextInt( RANGE ) - MINIMUM_DICE_FACE_VALUE );
+        return diceFace( rand.nextInt( RANGE ) + MINIMUM_DICE_FACE_VALUE );
     }
 
     /**

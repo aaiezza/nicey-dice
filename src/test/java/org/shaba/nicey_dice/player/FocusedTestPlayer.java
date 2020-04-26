@@ -23,9 +23,14 @@ public class FocusedTestPlayer extends Player {
         super(name);
         this.moveGenerator = new MoveGeneratorUtil();
     }
-
+    
     private FocusedTestPlayer(final Name name, final List<ScoredCard> scoredCards) {
         super(name, scoredCards);
+        this.moveGenerator = new MoveGeneratorUtil();
+    }
+
+    private FocusedTestPlayer(final Name name, final List<ScoredCard> scoredCards, final Stats stats) {
+        super(name, scoredCards, stats);
         this.moveGenerator = new MoveGeneratorUtil();
     }
 
@@ -33,7 +38,16 @@ public class FocusedTestPlayer extends Player {
     public Player withScoredCard(final ScoredCard scoredCard) {
         return new FocusedTestPlayer(
             getName(),
-            StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList() );
+            StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList(),
+            getStats() );
+    }
+
+    @Override
+    public Player afterMove(final Move move) {
+        return new FocusedTestPlayer(
+            getName(),
+            getScoredCards(),
+            getStats().afterMove(move) );
     }
 
     @Override

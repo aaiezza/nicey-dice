@@ -29,11 +29,25 @@ public class SimpleTestPlayer extends Player {
         this.moveGenerator = new MoveGeneratorUtil();
     }
 
+    private SimpleTestPlayer(final Name name, final List<ScoredCard> scoredCards, final Stats stats) {
+        super(name, scoredCards, stats);
+        this.moveGenerator = new MoveGeneratorUtil();
+    }
+
     @Override
     public Player withScoredCard(final ScoredCard scoredCard) {
         return new SimpleTestPlayer(
             getName(),
-            StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList() );
+            StreamEx.of(getScoredCards()).append( scoredCard ).toImmutableList(),
+            getStats() );
+    }
+
+    @Override
+    public Player afterMove(final Move move) {
+        return new SimpleTestPlayer(
+            getName(),
+            getScoredCards(),
+            getStats().afterMove(move) );
     }
 
     @Override
