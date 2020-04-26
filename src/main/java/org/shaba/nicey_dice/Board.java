@@ -16,8 +16,7 @@ public class Board
 
     public Board fillField()
     {
-        final AtomicReference<Board> board = new AtomicReference<>(
-                new Board( cardStock, fieldCards ) );
+        final AtomicReference<Board> board = new AtomicReference<>( this );
         while ( board.get().drawFromStockCanOccur() )
             board.updateAndGet( Board::drawFromStock );
         return board.get();
@@ -30,6 +29,12 @@ public class Board
     {
         return fieldCards.contains( fieldCard ) ? new Board( cardStock,
                 fieldCards.placeDiceForPlayer( fieldCard, player, diceFaces ) ) : this;
+    }
+
+    public Board scoreCard( final FieldCard fieldCard )
+    {
+        return fieldCards.contains( fieldCard ) ? new Board( cardStock,
+                fieldCards.scoreCard( fieldCard ) ) : this;
     }
 
     public Board removeDiceForPlayer(final Player player) {

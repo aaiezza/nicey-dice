@@ -44,10 +44,9 @@ public class FieldCards implements Iterable<FieldCard>
             throw new IllegalStateException( format( "Field cannot exceed %d number of cards",
                 MAXIMUM_NUMBER_OF_CARDS_IN_FIELD ) );
         }
-        final List<FieldCard> fieldCards = new ArrayList<>();
-        fieldCards.addAll( cards );
-        fieldCards.add( fieldCard( card ) );
-        return new FieldCards( Collections.unmodifiableList( fieldCards ) );
+        return new FieldCards(cardStream()
+            .append(fieldCard( card ))
+            .toListAndThen(Collections::unmodifiableList));
     }
 
     public boolean fieldIsFull()
@@ -73,13 +72,17 @@ public class FieldCards implements Iterable<FieldCard>
         if ( !contains( fieldCard ) )
             return this;
 
-        final List<FieldCard> fieldCards = cardStream().remove( fieldCard::equals ).toList();
-        fieldCards.add( fieldCard.addPlayerClaim( player, diceFaces ) );
-
-        return new FieldCards( Collections.unmodifiableList( fieldCards ) );
+        return cardStream()
+                .findFirst(fieldCard::equals)
+                .map(card ->
+                    cardStream()
+                        .map(fCard -> fCard == card ? fCard.addPlayerClaim(player, diceFaces)
+                                                    : fCard)
+                        .toListAndThen(Collections::unmodifiableList) )
+                .map(FieldCards::new)
+                .orElse(this);
     }
 
-    // TODO: Get rid of this if it is not needed
     public FieldCards scoreCard( final FieldCard fieldCard )
     {
         final int cardIndex = cards.indexOf( fieldCard );
@@ -111,6 +114,6 @@ public class FieldCards implements Iterable<FieldCard>
     @Override
     public Iterator<FieldCard> iterator()
     {
-        return cardStream().iterator();
+        return cards.iterator();
     }
 }

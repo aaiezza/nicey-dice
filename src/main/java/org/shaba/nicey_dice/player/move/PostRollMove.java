@@ -10,8 +10,6 @@ import java.util.function.Function;
 
 import static org.shaba.nicey_dice.NiceyDiceGame.niceyDiceGame;
 
-import one.util.streamex.StreamEx;
-
 public interface PostRollMove extends Move
 {
     @lombok.Value
@@ -47,7 +45,7 @@ public interface PostRollMove extends Move
                 final AtomicReference<Board> board = new AtomicReference<>(game
                         .getBoard()
                         .placeDiceForPlayer(getFieldCard(), player, detachedDie.getChosenDie()));
-                final Players players = StreamEx.of(board.get().getFieldCards().iterator())
+                final Players players = board.get().getFieldCards().cardStream()
                         .filter(fieldCard -> fieldCard.playerMeetsCriteria(player))
                         .reduce(
                             game.getPlayers(),
@@ -55,10 +53,8 @@ public interface PostRollMove extends Move
                                     .map(player::withScoredCard)
                                     .map(plyrs::replacePlayer)
                                     .peek(__ ->
-                                        board.set(new Board(board.get().getCardStock(),
-                                            board.get()
-                                            .getFieldCards()
-                                            .scoreCard(scoreableCard))))
+                                        board.set(board.get()
+                                            .scoreCard(scoreableCard)))
                                     .toJavaOptional()
                                     .orElse(plyrs),
                             (p1s, p2s) -> p1s);

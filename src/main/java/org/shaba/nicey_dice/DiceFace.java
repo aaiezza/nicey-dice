@@ -5,7 +5,7 @@ import static java.lang.String.format;
 import java.util.Arrays;
 
 @lombok.Value
-public class DiceFace
+public class DiceFace implements Comparable<DiceFace>
 {
     public static final int MINIMUM_DICE_FACE_VALUE = 1;
     public static final int MAXIMUM_DICE_FACE_VALUE = 6;
@@ -16,7 +16,7 @@ public class DiceFace
         if ( value < MINIMUM_DICE_FACE_VALUE || value > MAXIMUM_DICE_FACE_VALUE )
         {
             throw new IllegalArgumentException(
-                    format( "`%d` is invlad. Dice face must be between 1 and 6.", value ) );
+                    format( "`%d` is invalid. Dice face must be between 1 and 6.", value ) );
         }
         this.value = (byte) value;
     }
@@ -42,5 +42,10 @@ public class DiceFace
     public static DiceFace dF( final int value )
     {
         return new DiceFace( value );
+    }
+
+    @Override
+    public int compareTo(final DiceFace other) {
+        return getValue() - other.getValue();
     }
 }

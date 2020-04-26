@@ -23,6 +23,7 @@ import io.vavr.control.Try;
 import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 
+@lombok.Data
 @lombok.ToString ( callSuper = true )
 @lombok.EqualsAndHashCode ( callSuper = true )
 public class FieldCard extends Card
@@ -61,7 +62,7 @@ public class FieldCard extends Card
     public List<DiceFace> getClaimsForPlayer( final Player player )
     {
         return Collections
-                .unmodifiableList( playerClaims.getOrDefault( player.getName(), emptyList() ) );
+                .unmodifiableList( getPlayerClaims().getOrDefault( player.getName(), emptyList() ) );
     }
 
     public List<DiceFace> getUnclaimedCrieriaForPlayer( final Player player )
@@ -86,7 +87,8 @@ public class FieldCard extends Card
             final Player player,
             final DiceFace... diceFaces )
     {
-        final Map<Player.Name, List<DiceFace>> claims = EntryStream.of( playerClaims ).toMap();
+        final Map<Player.Name, List<DiceFace>> claims = EntryStream.of( playerClaims )
+                .toCustomMap(LinkedHashMap::new);
 
         final List<DiceFace> existingClaims = StreamEx
                 .of( playerClaims.getOrDefault( player.getName(), Lists.newArrayList() ) )

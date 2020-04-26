@@ -44,7 +44,8 @@ public class CardStock
     {
         final Deque<Card> cardStack = new LinkedList<>();
         cardStack.addAll( cards );
-        return Tuple.of( new CardStock( cardStack ), cardStack.pop() );
+        final Card drawnCard = cardStack.pop();
+        return Tuple.of( new CardStock( cardStack ), drawnCard );
     }
 
     public CardStock shuffle()

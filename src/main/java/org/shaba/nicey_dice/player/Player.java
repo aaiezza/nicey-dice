@@ -19,6 +19,7 @@ import io.vavr.control.Try;
 import one.util.streamex.StreamEx;
 
 @lombok.Data
+@lombok.ToString(callSuper = true)
 public abstract class Player
 {
     public static final int        NUMBER_OF_TOTAL_DICE = 6;
