@@ -18,7 +18,7 @@
         <junit.version>4.13</junit.version>
         <assertj.version>3.12.2</assertj.version>
         <streamex.version>0.7.2</streamex.version>
-        <guava.version>28.2-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <apache.commons.version>4.4</apache.commons.version>
         <slf4j.version>1.7.30</slf4j.version>
         <logback.version>1.2.3</logback.version>
