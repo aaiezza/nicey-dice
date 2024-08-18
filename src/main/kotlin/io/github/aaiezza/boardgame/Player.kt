@@ -12,11 +12,15 @@ sealed interface Player {
     fun makeActive() = if (this !is Active) Active(username, state) else this
     fun makeInactive() = if (this !is Inactive) Inactive(username, state) else this
 
-    interface State {
-        fun chooseMove(
-            exposableGameState: Game.State.Exposable,
-            availableMoves: List<Move.PlayerMove>
-        ): Pair<Move.PlayerMove, (Move.PlayerMove) -> Game.State>
+    sealed interface State {
+        interface StillPlaying : State {
+            fun chooseMove(
+                exposableGameState: Game.State.Exposable,
+                availableMoves: List<Move.PlayerMove>
+            ): Pair<Move.PlayerMove, (Move.PlayerMove) -> Game.State>
+        }
+
+        interface Finished : State
     }
 
     interface MoveCalculator {

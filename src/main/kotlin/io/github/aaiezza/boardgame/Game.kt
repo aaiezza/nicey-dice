@@ -1,7 +1,6 @@
 package io.github.aaiezza.boardgame
 
-
-data class Game private constructor(
+class Game private constructor(
     val previousGame: Game?,
     val players: Players,
     val state: State,
@@ -16,31 +15,41 @@ data class Game private constructor(
         playerMoveCalculator
     )
 
+    fun proceed(
+        previousGame: Game? = this,
+        players: Players = this.players,
+        state: State = this.state,
+    ): Game = Game(previousGame, players, state, gameMover, playerMoveCalculator)
+
     fun progress(): Game {
         return when (state) {
             is State.Terminal -> this
             is State.PlayerHasChosenNextThing -> state.chosenMove.invoke(this)
             is State.PlayerDoesNextThing -> {
-                val (chosenMove, nextState) = players[0].state
-                    .chooseMove(this.state.getExposedState(this), playerMoveCalculator(this))
-                copy(previousGame = this, state = nextState(chosenMove))
+                val (chosenMove, nextState) = with(players[0].state as Player.State.StillPlaying) {
+                    chooseMove(state.getExposedState(this@Game), playerMoveCalculator(this@Game))
+                }
+                proceed(state = nextState(chosenMove))
             }
+
             is State.GameDoesNextThing -> gameMover(this).invoke(this)
             is State.Undo -> previousGame?.previousGame ?: this
             else -> error("A subclass of state has not accounted for all game states (${state::class.qualifiedName})")
         }
     }
 
-    sealed interface State {
-        fun getExposedState(game: Game): Exposable
-
+    interface State {
         interface Exposable
 
         interface GameDoesNextThing : State
-        interface PlayerDoesNextThing : State
+        interface PlayerDoesNextThing : State {
+            fun getExposedState(game: Game): Exposable
+        }
+
         interface PlayerHasChosenNextThing : GameDoesNextThing {
             val chosenMove: Move.PlayerMove
         }
+
         interface Undo : State
 
         interface Terminal : State

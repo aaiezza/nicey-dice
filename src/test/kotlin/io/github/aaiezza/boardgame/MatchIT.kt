@@ -95,7 +95,7 @@ sealed interface RollerPlayerState {
         override val totalDistance: Int,
         override val lastRoll: Int? = null
     ) :
-        Player.State, RollerPlayerState {
+        RollerPlayerState, Player.State.StillPlaying {
         override fun chooseMove(
             exposableGameState: Game.State.Exposable,
             availableMoves: List<Move.PlayerMove>,
@@ -129,13 +129,7 @@ sealed interface RollerPlayerState {
         override val totalDistance: Int,
         override val lastRoll: Int = -1
     ) :
-        Player.State, RollerPlayerState {
-        override fun chooseMove(
-            exposableGameState: Game.State.Exposable,
-            availableMoves: List<Move.PlayerMove>
-        ): Pair<Move.PlayerMove, (Move.PlayerMove) -> Game.State> {
-            error("This player is finished. Why is she being asked to choose a move?")
-        }
+        RollerPlayerState, Player.State.Finished {
     }
 
     companion object {
@@ -153,8 +147,8 @@ sealed interface RollerPlayerMove : Move.PlayerMove {
         private fun checkForGameMove(game: Game): Game {
             val gameState = game.state as RollerGameState
             return if (gameState.turnsUntilObstacle <= 0) {
-                return game.copy(
-                    previousGame = game.previousGame,
+                return game.proceed(
+                    previousGame = game.previousGame!!,
                     state = RollerGameState.PushBackPlayers(
                         placeCounter = gameState.placeCounter,
                         resetTurnsUntilObstacle = gameState.resetTurnsUntilObstacle,
@@ -176,11 +170,10 @@ sealed interface RollerPlayerMove : Move.PlayerMove {
                     l.state.asFinished().numbersOfRolls - r.state.asFinished().numbersOfRolls
                 }.thenComparing { l, r ->
                     l.state.asFinished().place - r.state.asFinished().place
-
                 }
 
-                game.copy(
-                    previousGame = game.previousGame,
+                game.proceed(
+                    previousGame = game.previousGame!!,
                     state = RollerGameState.PlayerWon(
                         winningPlayers = game.players.sortedWith(comparator),
                         gameState.placeCounter,
@@ -231,8 +224,7 @@ sealed interface RollerPlayerMove : Move.PlayerMove {
                 }
             }.let { Players(it) }.progressPlayers()
 
-            var nextGame = game.copy(
-                previousGame = game,
+            var nextGame = game.proceed(
                 players = players,
                 state = gameState.toPlayerMustRollState(
                     placeCounter = gameStatePlace,
@@ -244,7 +236,7 @@ sealed interface RollerPlayerMove : Move.PlayerMove {
             while (players.first().state is RollerPlayerState.Finished) {
                 players = players.progressPlayers()
             }
-            nextGame = nextGame.copy(players = players)
+            nextGame = nextGame.proceed(nextGame.previousGame, players = players)
 
             return with(checkForGameMove(nextGame)) {
                 if (this != nextGame) this else nextGame
@@ -267,8 +259,7 @@ data class RollerExposableGameState(
     val resetTurnsUntilObstacle: Int,
     val turnsUntilObstacle: Int,
     val goal: Int
-) :
-    Game.State.Exposable
+) : Game.State.Exposable
 
 sealed class RollerGameState(
     val placeCounter: Int = 1,
@@ -344,8 +335,7 @@ class RollerGameMover : Game.Mover {
     sealed interface RollerGameMove {
         class ChooseObstacleSize : Move.GameMove {
             override fun invoke(game: Game): Game {
-                return game.copy(
-                    previousGame = game,
+                return game.proceed(
                     state = (game.state as RollerGameState.PushBackPlayers)
                         .let {
                             RollerGameState.PushBackPlayersObstacleChosen(
@@ -362,8 +352,7 @@ class RollerGameMover : Game.Mover {
         class PushBackPlayers(val obstacle: Int) : Move.GameMove {
             override fun invoke(game: Game): Game {
                 val gameState = game.state as RollerGameState
-                return game.copy(
-                    previousGame = game,
+                return game.proceed(
                     players = game.players.map {
                         Player(it.username, with(it.state) {
                             if (this is RollerPlayerState.StillPlaying) {
