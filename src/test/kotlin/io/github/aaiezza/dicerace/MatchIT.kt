@@ -84,7 +84,6 @@ class MatchIT {
     }
 }
 
-fun String.asUsername() = Player.Username(this)
 fun Player.Username.asCarefulDiceRacePlayer() = Player(username = this, state = CarefulDiceRacePlayerState())
 
 data class CarefulDiceRacePlayerState(

@@ -83,3 +83,5 @@ data class Players internal constructor(
         return "Players(value=$value)"
     }
 }
+
+fun String.asUsername() = Player.Username(this)

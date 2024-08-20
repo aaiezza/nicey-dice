@@ -69,6 +69,28 @@ data class Obstacle(val value: Int) {
     }
 }
 
+data class NumberOfRolls(val value: Int = 0) {
+    init {
+        require(value >= 0)
+    }
+
+    fun inc() = copy(value = value + 1)
+}
+
+data class Roll(val value: Int) {
+    init {
+        require(value > 0)
+    }
+
+    fun asDistance() = Distance(value)
+
+    operator fun plus(other: Roll) = copy(value = value + other.value)
+
+    companion object {
+        fun random(): Roll = Roll((1..6).random())
+    }
+}
+
 sealed class DiceRaceState(
     val placeCounter: PlaceCounter,
     val resetTurnsUntilObstacle: ResetTurnsUntilObstacle,
@@ -307,29 +329,6 @@ sealed interface DiceRacePlayerMove : Move.PlayerMove {
         override fun invoke(game: Game): Game = executeRoll(game) { Roll.random() + Roll.random() }
     }
 }
-
-data class NumberOfRolls(val value: Int = 0) {
-    init {
-        require(value >= 0)
-    }
-
-    fun inc() = copy(value = value + 1)
-}
-
-data class Roll(val value: Int) {
-    init {
-        require(value > 0)
-    }
-
-    fun asDistance() = Distance(value)
-
-    operator fun plus(other: Roll) = copy(value = value + other.value)
-
-    companion object {
-        fun random(): Roll = Roll((1..6).random())
-    }
-}
-
 
 sealed interface DiceRacePlayerState {
     val numbersOfRolls: NumberOfRolls
